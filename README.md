@@ -1,0 +1,2 @@
+# OZNAL (Knowledge Discovery) project 
+
