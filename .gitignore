@@ -1,2 +1,5 @@
 data/*
 notebooks/.ipynb_checkpoints/*
+.venv/*
+.vim/*
+**/__pycache__/
