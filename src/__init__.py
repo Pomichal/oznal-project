@@ -1,1 +1,1 @@
-import analysis.analyze_single_col
+from .analysis import analyze_single_col

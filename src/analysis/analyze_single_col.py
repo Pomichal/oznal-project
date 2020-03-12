@@ -18,7 +18,7 @@ class SingleColAnalyser:
         q1, q3 = df[column].quantile(0.25), df[column].quantile(0.75) 
         iqr = q3 - q1
         lower_bound = q1 -(1.5 * iqr)
-        upper_bound = q3 +(1.5 * iqr) 
+        upper_bound = q3 +(1.5 * iqr)
         out_upper = df[column][df[column] > upper_bound].shape[0]
         out_lower = df[column][df[column] < lower_bound].shape[0]
         print("outliers upper: " + str(out_upper) + "/" + str(lines) + " (" + str(out_upper / lines) + "%)")
@@ -30,3 +30,8 @@ class SingleColAnalyser:
 
         return fig, axs
 
+    def analyze_category(self, df, column):
+        print(df[column].describe())
+        for cat in df[column].unique():
+            print('Ratio of ' + str(cat) + ': ' + str(df[df[column] == cat].shape[0] / df.shape[0]) + '%')
+        return sns.countplot(x=column, data=df)
