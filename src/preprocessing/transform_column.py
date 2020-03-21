@@ -11,3 +11,15 @@ class ColumnTransformer:
             for item in data:
                 response.loc[index][item['name']] = item['count']
         return response
+
+    def export_book_authors_average_value(self, df, authors_df, col_name='average_rating', new_col_name='authors_average_rating'):
+        response = pd.DataFrame(columns=[new_col_name], index=df.index)
+        for index, row in df.iterrows():
+            val = 0
+            author_count = 0
+            for author in json.loads(row.loc['authors'].replace('"','~').replace("'",'"').replace("~","'")):
+                val += authors_df[authors_df['author_id'] == int(author['author_id'])][col_name].values[0]
+                author_count += 1
+            if author_count > 0:
+                response.loc[index][new_col_name] = val / author_count
+        return response

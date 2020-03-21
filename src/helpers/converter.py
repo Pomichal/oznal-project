@@ -16,7 +16,8 @@ def json_to_csv(source, destination, chunksize=10000):
         num_chunks -= 1
     print()
 
-json_to_csv("../../data/goodreads_reviews_young_adult.json", "../../data/reviews", chunksize=100000)
-json_to_csv("../../data/goodreads_books_young_adult.json", "../../data/books", chunksize=10000)
-json_to_csv("../../data/goodreads_interactions_young_adult.json", "../../data/interactions", chunksize=100000)
+#json_to_csv("../../data/goodreads_reviews_young_adult.json", "../../data/reviews", chunksize=100000)
+#json_to_csv("../../data/goodreads_books_young_adult.json", "../../data/books", chunksize=10000)
+#json_to_csv("../../data/goodreads_interactions_young_adult.json", "../../data/interactions", chunksize=100000)
+json_to_csv("../../data/goodreads_book_authors.json", "../../data/authors", chunksize=100000)
 
