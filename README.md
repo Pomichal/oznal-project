@@ -11,3 +11,13 @@ We works with young adult genre subset:
 
 
 To convert json data to csv run use function json_to_csv from Converter class (converter.py)
+
+## Virtualenv and dependencies
+
+You can create a python virtual enviroment and install all dependencies by running these commands in project folder:
+
+```bash
+$ python3 -m venv .venv
+$ source .venv/bin/activate
+$ pip install -r requirements.txt
+```

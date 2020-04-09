@@ -1,3 +1,4 @@
 pandas==1.0.1
-pynvim
-seaborn
+pynvim==0.4.1
+seaborn==0.10.0
+wordcloud==1.6.0
