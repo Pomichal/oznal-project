@@ -10,7 +10,11 @@ We works with young adult genre subset:
 - [reviews](https://drive.google.com/uc?id=1M5iqCZ8a7rZRtsmY5KQ5rYnP9S0bQJVo) - download size (.gz): 857 MB
 
 
-To convert json data to csv run use function json_to_csv from Converter class (converter.py)
+To convert json data to csv use the converter.py script:
+
+```bash
+$ python src/preprocessing/converter.py -i data/goodreads_books_young_adult.json -o data/books      # example usage from project's root folder
+```
 
 ## Virtualenv and dependencies
 
