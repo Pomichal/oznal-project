@@ -24,4 +24,5 @@ You can create a python virtual enviroment and install all dependencies by runni
 $ python3 -m venv .venv
 $ source .venv/bin/activate
 $ pip install -r requirements.txt
+$ python -m ipykernel install --user --name=.venv   # add .venv to the jupyter notebook kernels (see: https://janakiev.com/blog/jupyter-virtual-envs/)
 ```
