@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+from sklearn.base import TransformerMixin
 
 class ColumnTransformer:
 
@@ -23,3 +24,28 @@ class ColumnTransformer:
             if author_count > 0:
                 response.loc[index][new_col_name] = val / author_count
         return response
+
+
+class ExportBookShelves(TransformerMixin):
+
+    def __init__(self, tag_column, tags):
+        self.tag_col = tag_column
+        self.tags = tags
+
+    def fit(self, df, y=None):
+            print('ExportBookShelves, tag_col: ' + self.tag_col + ', tags:' + self.tags)
+            return self
+
+    def transform(self, df):
+        new_cols = pd.DataFrame(columns=self.tags, index=df.index)
+        for index, row in df.iterrows():
+            shelves = json.loads(row[self.tag_col].replace("'",'"'))
+            data = filter(lambda shelve: shelve['name'] in self.tags, shelves)
+            for item in data:
+                new_cols.loc[index][item['name']] = item['count']
+        new_cols.fillna(value={i : 0 for i in self.tags})
+        for col in new_cols:
+            new_cols[col] = pd.to_numeric(new_cols[col])
+        return df.join(new_cols)
+
+
