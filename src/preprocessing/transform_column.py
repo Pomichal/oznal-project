@@ -33,8 +33,8 @@ class ExportBookShelves(TransformerMixin):
         self.tags = tags
 
     def fit(self, df, y=None):
-            print('ExportBookShelves, tag_col: ' + self.tag_col + ', tags:' + self.tags)
-            return self
+        print('ExportBookShelves, tag_col: ' + self.tag_col + ', tags:' + str(self.tags))
+        return self
 
     def transform(self, df):
         new_cols = pd.DataFrame(columns=self.tags, index=df.index)
@@ -43,7 +43,7 @@ class ExportBookShelves(TransformerMixin):
             data = filter(lambda shelve: shelve['name'] in self.tags, shelves)
             for item in data:
                 new_cols.loc[index][item['name']] = item['count']
-        new_cols.fillna(value={i : 0 for i in self.tags})
+        new_cols = new_cols.fillna(value={i : 0 for i in self.tags})
         for col in new_cols:
             new_cols[col] = pd.to_numeric(new_cols[col])
         return df.join(new_cols)
