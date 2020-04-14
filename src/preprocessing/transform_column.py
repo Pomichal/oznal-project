@@ -33,7 +33,7 @@ class ExportBookShelves(TransformerMixin):
         self.tags = tags
 
     def fit(self, df, y=None):
-        print('ExportBookShelves, tag_col: ' + self.tag_col + ', tags:' + str(self.tags))
+        print('(fit) ExportBookShelves, tag_col: ' + self.tag_col + ', tags:' + str(self.tags))
         return self
 
     def transform(self, df):
@@ -49,3 +49,53 @@ class ExportBookShelves(TransformerMixin):
         return df.join(new_cols)
 
 
+class DropColumns(TransformerMixin):
+    def __init__(self, cols):
+        self.cols = cols
+
+    def fit(self, df, y=None):
+        print("(fit) Drop columns: " + str(self.cols))
+        return self
+
+    def transform(self, df):
+        return df.drop(self.cols, axis=1)
+
+
+class SelectBooksWithNPercentile(TransformerMixin):
+    def __init__(self, col_name, lower_percentile):
+        self.col_name = col_name
+        self.percentile = lower_percentile
+        self.bound = 0
+
+    def fit(self, df, y=None):
+        self.bound = df[self.col_name].quantile(self.percentile)
+        print("(fit) Select books with: " + self.col_name + " >= " + str(self.bound))
+        return self
+
+    def transform(self, df):
+        return df[df[self.col_name] >= self.bound]
+
+
+class ExportAuthorsAverageRating(TransformerMixin):
+    def __init__(self, author_col_name, new_col_name, authors_df):
+        self.author_col_name = author_col_name
+        self.new_col_name = new_col_name
+        self.authors_df = authors_df
+
+    def fit(self, df, y=None):
+        print("(fit) Export authors average rating")
+        return self
+
+    def transform(self, df):
+        authors_ratings = pd.DataFrame(columns=[self.new_col_name], index=df.index)
+        for index, row in df.iterrows():
+            val = 0
+            author_count = 0
+            for author in json.loads(row.loc[self.author_col_name].replace('"','~').replace("'",'"').replace("~","'")):
+                val += self.authors_df[self.authors_df['author_id'] == 
+                                       int(author['author_id'])]['average_rating'].values[0]
+                author_count += 1
+            if author_count > 0:
+                authors_ratings.loc[index][self.new_col_name] = val / author_count
+                
+        return df.join(authors_ratings)
