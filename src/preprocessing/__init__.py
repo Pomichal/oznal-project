@@ -1,1 +1,1 @@
-from .transform_column import ColumnTransformer, ExportBookShelves, DropColumns, SelectBooksWithNPercentile, ExportAuthorsAverageRating
+from .transform_column import ColumnTransformer, ExportBookShelves, DropColumns, SelectBooksWithNPercentile, ExportAuthorsAverageRating, EncodeCategories

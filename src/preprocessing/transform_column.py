@@ -92,10 +92,25 @@ class ExportAuthorsAverageRating(TransformerMixin):
             val = 0
             author_count = 0
             for author in json.loads(row.loc[self.author_col_name].replace('"','~').replace("'",'"').replace("~","'")):
-                val += self.authors_df[self.authors_df['author_id'] == 
+                val += self.authors_df[self.authors_df['author_id'] ==
                                        int(author['author_id'])]['average_rating'].values[0]
                 author_count += 1
             if author_count > 0:
                 authors_ratings.loc[index][self.new_col_name] = val / author_count
-                
+        authors_ratings[self.new_col_name] = pd.to_numeric(authors_ratings[self.new_col_name])
         return df.join(authors_ratings)
+
+
+class EncodeCategories(TransformerMixin):
+    def __init__(self, encoder):
+        self.encoder = encoder
+
+    def fit(self, df, y=None):
+        print("(fit) Category encoder " + str(self.encoder))
+        self.encoder.fit(df)
+        return self
+
+    def transform(self, df):
+        df_copy = df.copy()
+        df_copy = self.encoder.transform(df)
+        return df_copy
