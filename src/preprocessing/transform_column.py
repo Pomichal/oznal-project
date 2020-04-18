@@ -6,6 +6,8 @@ from langdetect import detect
 import re
 from sklearn.base import clone
 from sklearn.model_selection import cross_validate
+import math
+from scipy.stats import boxcox
 
 class ColumnTransformer:
 
@@ -331,4 +333,75 @@ class DropOutliers(TransformerMixin):
             extremes_max = df_copy[df_copy[col] > self.max_extreme[col]].index
             df_copy.drop(extremes_min, inplace=True)
             df_copy.drop(extremes_max, inplace=True)
+        return df_copy
+
+
+class ZScoreNormalization(TransformerMixin):
+    def __init__(self, col_names, new_name=""):
+        self.col_names = col_names
+
+    def fit(self, df, y=None, **fit_params):
+        self.mean = {}
+        self.std = {}
+        for col in self.col_names:
+            self.mean[col] = df[col].mean()
+            self.std[col] = df[col].std()
+        return self
+
+    def transform(self, df, **transform_params):
+        df_copy = df.copy()
+        for col in self.col_names:
+            transformed = (df[col] - self.mean[col])/ self.std[col]
+            df_copy[col] = transformed
+        return df_copy
+
+
+class LogNormalization(TransformerMixin):
+    def __init__(self, col_names, new_name=""):
+        self.col_names = col_names
+
+    def fit(self, df, y=None, **fit_params):
+        return self
+
+    def transform(self, df, **transform_params):
+        df_copy = df.copy()
+        for col in self.col_names:
+            transformed = df[col].apply(math.log)
+            df_copy[col] = transformed
+        return df_copy
+
+
+class BoxCoxNormalization(TransformerMixin):
+    def __init__(self, col_names, new_name=""):
+        self.col_names = col_names
+
+    def fit(self, df, y=None, **fit_params):
+        self.boxcox_attr = {}
+        for col in self.col_names:
+            _, self.boxcox_attr[col] = boxcox(df[col])
+        return self
+
+    def transform(self, df, **transform_params):
+        df_copy = df.copy()
+        for col in self.col_names:
+            transformed = boxcox(df_copy[col], lmbda=self.boxcox_attr[col])
+            df_copy[col] = transformed
+        return df_copy
+
+
+class Scale(TransformerMixin):
+    def __init__(self, col_names, scaler):
+        self.col_names = col_names
+        self.scaler = scaler
+
+    def fit(self, df, y=None, **fit_params):
+        self.scalers = {}
+        for col in self.col_names:
+            self.scalers[col] = self.scalers[col].fit(df[col])
+        return self
+
+    def transform(self, df, **transform_params):
+        df_copy = df.copy()
+        for col in self.col_names:
+            df_copy[col] = self.scalers[col].transform(df_copy[col])
         return df_copy
