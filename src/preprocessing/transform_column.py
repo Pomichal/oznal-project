@@ -45,16 +45,16 @@ class ExportBookShelves(TransformerMixin):
 
     def transform(self, df):
         print('(transform) ExportBookShelves, tag_col: ' + self.tag_col + ', tags:' + str(self.tags))
-        new_cols = pd.DataFrame(columns=self.tags, index=df.index)
-        for index, row in df.iterrows():
-            shelves = json.loads(row[self.tag_col].replace("'",'"'))
+        new_cols = df[['book_id']]
+        for book_id in df.book_id.unique():
+            shelves = json.loads(df[df.book_id == book_id][self.tag_col].values[0].replace("'",'"'))
             data = filter(lambda shelve: shelve['name'] in self.tags, shelves)
             for item in data:
-                new_cols.loc[index][item['name']] = item['count']
+                new_cols.loc[new_cols.book_id == book_id,item['name']] = item['count']
         new_cols = new_cols.fillna(value={i : 0 for i in self.tags})
         for col in new_cols:
-            new_cols[col] = pd.to_numeric(new_cols[col])
-        return df.join(new_cols)
+            new_cols.loc[:,col] = pd.to_numeric(new_cols[col])
+        return df.join(new_cols.drop(['book_id'], axis=1))
 
 
 class DropColumns(TransformerMixin):
@@ -113,18 +113,19 @@ class ExportAuthorsAverageRating(TransformerMixin):
 
     def transform(self, df):
         print("(transform) Export authors average rating")
-        authors_ratings = pd.DataFrame(columns=[self.new_col_name], index=df.index)
-        for index, row in df.iterrows():
+        authors_ratings = df[['book_id']]
+        for book_id in df.book_id.unique():
             val = 0
             author_count = 0
-            for author in json.loads(row.loc[self.author_col_name].replace('"','~').replace("'",'"').replace("~","'")):
+            for author in json.loads(df[df.book_id == book_id][self.author_col_name].values[0]
+                                     .replace('"','~').replace("'",'"').replace("~","'")):
                 val += self.authors_df[self.authors_df['author_id'] ==
                                        int(author['author_id'])]['average_rating'].values[0]
                 author_count += 1
             if author_count > 0:
-                authors_ratings.loc[index][self.new_col_name] = val / author_count
-        authors_ratings[self.new_col_name] = pd.to_numeric(authors_ratings[self.new_col_name])
-        return df.join(authors_ratings)
+                authors_ratings.loc[authors_ratings.book_id == book_id, self.new_col_name] = val / author_count
+        authors_ratings.loc[:,self.new_col_name] = pd.to_numeric(authors_ratings[self.new_col_name])
+        return df.join(authors_ratings[self.new_col_name])
 
 
 class EncodeCategories(TransformerMixin):
@@ -413,16 +414,19 @@ class BoxCoxNormalization(TransformerMixin):
 class Scale(TransformerMixin):
     def __init__(self, col_names, scaler):
         self.col_names = col_names
-        self.scaler = scaler
+        self.scalers = {}
+        for col in col_names:
+            self.scalers[col] = clone(scaler)
 
     def fit(self, df, y=None, **fit_params):
-        self.scalers = {}
+        print("(fit) Scale cols:", self.col_names)
         for col in self.col_names:
-            self.scalers[col] = clone(self.scaler).fit(df[col])
+            self.scalers[col] = self.scalers[col].fit(df[[col]])
         return self
 
     def transform(self, df, **transform_params):
+        print("(transform) Scale cols:", self.col_names)
         df_copy = df.copy()
         for col in self.col_names:
-            df_copy[col] = self.scalers[col].transform(df_copy[col])
+            df_copy[col] = self.scalers[col].transform(df_copy[[col]])
         return df_copy
