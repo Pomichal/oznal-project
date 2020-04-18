@@ -337,7 +337,7 @@ class DropOutliers(TransformerMixin):
 
 
 class ZScoreNormalization(TransformerMixin):
-    def __init__(self, col_names, new_name=""):
+    def __init__(self, col_names):
         self.col_names = col_names
 
     def fit(self, df, y=None, **fit_params):
@@ -351,7 +351,7 @@ class ZScoreNormalization(TransformerMixin):
     def transform(self, df, **transform_params):
         df_copy = df.copy()
         for col in self.col_names:
-            transformed = (df[col] - self.mean[col])/ self.std[col]
+            transformed = (df[col] - self.mean[col]) / self.std[col]
             df_copy[col] = transformed
         return df_copy
 
