@@ -1,6 +1,8 @@
 import json
 import pandas as pd
 from sklearn.base import TransformerMixin
+from langdetect import detect
+import re
 
 class ColumnTransformer:
 
@@ -118,4 +120,99 @@ class EncodeCategories(TransformerMixin):
         print("(transform) Category encoder " + str(self.encoder))
         df_copy = df.copy()
         df_copy = self.encoder.transform(df)
+        return df_copy
+		
+
+class ReviewsLanguageFilter(TransformerMixin):
+    def __init__(self, column, language):
+        self.column = column
+        self.language = language
+
+    def fit(self, df, y=None, **fit_params):
+        print("(fit) Reviews language filter")
+        return self
+
+    def transform(self, df, **transform_params):
+        print("(transform) Reviews language filter")
+        df_copy = df.copy()
+
+        df_copy['lang'] = df_copy[self.column].apply(
+            lambda text: detect(text)
+        )
+        df_copy = df_copy[df_copy.lang == self.language]
+
+        df_copy.drop(['lang'], axis=1, inplace=True)
+
+        return df_copy
+
+
+class EmptyValuesFilter(TransformerMixin):
+    def __init__(self, columns):
+        self.columns = columns
+
+    def fit(self, df, y=None, **fit_params):
+        print("(fit) Empty values filter")
+        return self
+
+    def transform(self, df, **transform_params):
+        print("(transform) Empty values filter")
+        df = df.dropna(subset=self.columns)
+
+        for column in self.columns:
+            df = df[df[column] != '']
+
+        return df
+
+
+class TextPreprocessor(TransformerMixin):
+    def __init__(self, column):
+        self.column = column
+
+    def fit(self, df, y=None, **fit_params):
+        print("(fit) Text preprocessing")
+        return self
+
+    def transform(self, df, **transform_params):
+        print("(transform) Text preprocessing")
+        df_copy = df.copy()
+
+        # Lowercase text
+        df_copy[self.column] = df_copy[self.column].apply(
+            lambda text: text.lower()
+        )
+        # Remove special characters
+        df_copy[self.column] = df_copy[self.column].apply(
+            lambda text: re.sub(r'[^a-zA-Z0-9\.,?!]+', ' ', text)
+        )
+        # Remove urls
+        df_copy[self.column] = df_copy[self.column].apply(
+            lambda text: re.sub(r'(www|http:|https:)+[^\s]+[\w]', '', text)
+        )
+
+        return df_copy
+
+
+class ReviewLengthFilter(TransformerMixin):
+    def __init__(self, column, lower_boundary, upper_boundary):
+        self.column = column
+        self.lower_boundary = lower_boundary
+        self.upper_boundary = upper_boundary
+
+    def fit(self, df, y=None, **fit_params):
+        print("(fit) Review length filter")
+        return self
+
+    def transform(self, df, **transform_params):
+        print("(transform) Review length filter")
+        df_copy = df.copy()
+
+        df_copy['num_words'] = df_copy[self.column].apply(
+            lambda text: len(text.split())
+        )
+        df_copy = df_copy[
+            (df_copy['num_words'] > self.lower_boundary) & (df_copy['num_words'] < self.upper_boundary)
+        ]
+
+        df_copy.drop(['num_words'], axis=1, inplace=True)
+
         return df_copy
