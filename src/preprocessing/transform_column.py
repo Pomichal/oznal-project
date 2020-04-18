@@ -92,7 +92,7 @@ class ExportAuthorsAverageRating(TransformerMixin):
         return self
 
     def transform(self, df):
-        print("transform) Export authors average rating")
+        print("(transform) Export authors average rating")
         authors_ratings = pd.DataFrame(columns=[self.new_col_name], index=df.index)
         for index, row in df.iterrows():
             val = 0
@@ -121,7 +121,7 @@ class EncodeCategories(TransformerMixin):
         df_copy = df.copy()
         df_copy = self.encoder.transform(df)
         return df_copy
-		
+
 
 class ReviewsLanguageFilter(TransformerMixin):
     def __init__(self, column, language):
