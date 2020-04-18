@@ -133,11 +133,16 @@ class ReviewsLanguageFilter(TransformerMixin):
         return self
 
     def transform(self, df, **transform_params):
+        def detect_text(text):
+            try:
+                return detect(text)
+            except:
+                return 'unknown'
         print("(transform) Reviews language filter")
         df_copy = df.copy()
 
         df_copy['lang'] = df_copy[self.column].apply(
-            lambda text: detect(text)
+            detect_text
         )
         df_copy = df_copy[df_copy.lang == self.language]
 
