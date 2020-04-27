@@ -10,7 +10,7 @@ def main(argv):
     outputfile = ''
     chunksize = 10000
     try:
-        opts, args = getopt.getopt(argv,"hi:o:",["ifile=","ofile="])
+        opts, args = getopt.getopt(argv, "hi:o:c:",["ifile=","ofile=","chunksize="])
     except getopt.GetoptError:
         print(helpstring);
         sys.exit(2)
@@ -23,7 +23,7 @@ def main(argv):
         elif opt in ("-o", "--ofile"):
             outputfile = arg
         elif opt in ("-c", "--chunksize"):
-            chunksize = arg
+            chunksize = int(arg)
     json_to_csv(inputfile, outputfile, chunksize)
 
 
