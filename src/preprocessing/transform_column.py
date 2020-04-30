@@ -124,7 +124,7 @@ class ExportAuthorsAverageRating(TransformerMixin):
                 author_count += 1
             if author_count > 0:
                 authors_ratings.loc[authors_ratings.book_id == book_id, self.new_col_name] = val / author_count
-        authors_ratings.loc[:,self.new_col_name] = pd.to_numeric(authors_ratings[self.new_col_name])
+        authors_ratings.loc[:, self.new_col_name] = pd.to_numeric(authors_ratings[self.new_col_name])
         return df.join(authors_ratings[self.new_col_name])
 
 
@@ -287,7 +287,7 @@ class ReplaceNansNumeric(TransformerMixin):
     def transform(self, df, **transform_params):
         df_copy = df.copy()
         for col in self.col_names:
-            df_copy[col] = df_copy[col].fillna(self.na_replace[col])
+            df_copy.loc[:, col] = df_copy[col].fillna(self.na_replace[col])
         return df_copy
 
 
@@ -339,7 +339,7 @@ class DropOutliers(TransformerMixin):
             Q3 = df[col].quantile(0.75)
             IQR = Q3 - Q1
             self.min_extreme[col] = (Q1 - 1.5 * IQR)
-            self.max_extreme[col] = (Q3 + 1.5 * IQR)                   
+            self.max_extreme[col] = (Q3 + 1.5 * IQR)
         return self
 
     def transform(self, df, **transform_params):
@@ -370,7 +370,7 @@ class ZScoreNormalization(TransformerMixin):
         df_copy = df.copy()
         for col in self.col_names:
             transformed = (df[col] - self.mean[col]) / self.std[col]
-            df_copy[col] = transformed
+            df_copy.loc[:, col] = transformed
         return df_copy
 
 
@@ -387,7 +387,7 @@ class LogNormalization(TransformerMixin):
         df_copy = df.copy()
         for col in self.col_names:
             transformed = df[col].apply(math.log)
-            df_copy[col] = transformed
+            df_copy.loc[:,col] = transformed
         return df_copy
 
 
@@ -396,18 +396,18 @@ class BoxCoxNormalization(TransformerMixin):
         self.col_names = col_names
 
     def fit(self, df, y=None, **fit_params):
-        print("(fit) LogNormalization")
+        print("(fit) BoxCoxNormalization")
         self.boxcox_attr = {}
         for col in self.col_names:
             _, self.boxcox_attr[col] = boxcox(df[col])
         return self
 
     def transform(self, df, **transform_params):
-        print("(transform) LogNormalization")
+        print("(transform) BoxCoxNormalization")
         df_copy = df.copy()
         for col in self.col_names:
             transformed = boxcox(df_copy[col], lmbda=self.boxcox_attr[col])
-            df_copy[col] = transformed
+            df_copy.loc[:,col] = transformed
         return df_copy
 
 
@@ -421,12 +421,13 @@ class Scale(TransformerMixin):
     def fit(self, df, y=None, **fit_params):
         print("(fit) Scale cols:", self.col_names)
         for col in self.col_names:
-            self.scalers[col] = self.scalers[col].fit(df[[col]])
+            if len(df[col].dropna()) > 0:
+                self.scalers[col] = self.scalers[col].fit(df[[col]])
         return self
 
     def transform(self, df, **transform_params):
         print("(transform) Scale cols:", self.col_names)
         df_copy = df.copy()
         for col in self.col_names:
-            df_copy[col] = self.scalers[col].transform(df_copy[[col]])
+            df_copy.loc[:, col] = self.scalers[col].transform(df_copy[[col]])
         return df_copy
