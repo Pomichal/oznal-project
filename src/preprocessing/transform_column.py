@@ -18,6 +18,9 @@ class ColumnTransformer:
             data = filter(lambda shelve: shelve['name'] in tags, shelves)
             for item in data:
                 response.loc[index][item['name']] = item['count']
+        response = response.fillna(value={i : 0 for i in tags})
+        for col in tags:
+            response[col] = pd.to_numeric(response[col])
         return response
 
     def export_book_authors_average_value(self, df, authors_df, col_name='average_rating', new_col_name='authors_average_rating'):
