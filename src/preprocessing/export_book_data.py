@@ -41,6 +41,7 @@ class ExportBookData(TransformerMixin):
         self.books_df = self.books_df.merge(df[[self.book_id_col] + self.mean_cols]
                                             .groupby(self.book_id_col).mean(),
                                             left_index=True, right_index=True)
+        # self.books_df.join(TF-IDF)
         scaler = MinMaxScaler()
         similarity = pd.DataFrame(data=self.dist_func(scaler.fit_transform(self.books_df)),
                                   columns=count.index, index=count.index)
