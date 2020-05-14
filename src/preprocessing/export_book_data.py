@@ -16,24 +16,11 @@ class ExportBookData(TransformerMixin):
         self.dist_func = dist_func
         self.n_most_similar = n_most_similar
         self.mode = mode
+        self.users_df = pd.DataFrame()
 
     def fit(self, df, y=None):
         
-        def similar(x):
-            index = x.name
-            similar_books = similarity[index].nsmallest(self.n_most_similar + 1)[1:].index
-            if self.mode == 'avg':
-                return self.books_df[['text_reviews_count'] + self.mean_cols].loc[similar_books,:].mean()
-            if self.mode == 'all':
-                data = [r[col] for _, r in self
-                        .books_df[['text_reviews_count'] + self.mean_cols].loc[similar_books, :].iterrows()
-                        for col in ['text_reviews_count'] + self.mean_cols]
-                cols = ['sim_' + str(i) + '_' + col for i in range(self.n_most_similar)
-                        for col in ['text_reviews_count'] + self.mean_cols]
-                response = pd.DataFrame(columns=cols)
-                response.loc[0] = data
-                return pd.Series(data, index=cols)
-            raise ValueError('Invalid option for "mode" (valid options are "avg or "all')
+        
 
         print('(fit) ExportBookData, mean_cols:', self.mean_cols,
               'book_id_col:', self.book_id_col, 'dist_func:', self.dist_func,
@@ -56,13 +43,13 @@ class ExportBookData(TransformerMixin):
         tf = TfidfVectorizer(analyzer='word',ngram_range=(1, 2),min_df=0, max_df=0.2, stop_words='english')
         tfidf_matrix = tf.fit_transform(self.books_df['corpus'])
 
-        similarity = pd.DataFrame(data=self.dist_func(tfidf_matrix),
+        self.similarity = pd.DataFrame(data=self.dist_func(tfidf_matrix),
                                   columns=count.index, index=count.index)
         
         self.books_df = self.books_df.set_index("book_id")
         
         
-        self.books_df = self.books_df.join(self.books_df.apply(similar, axis=1),
+        self.books_df = self.books_df.join(self.books_df.apply(self.similar, axis=1),
                                    rsuffix="_sim_" + self.mode)
 
         self.books_df = self.books_df.drop(['isbn', 'series', 'country_code', 'language_code',
@@ -73,6 +60,11 @@ class ExportBookData(TransformerMixin):
                                   'image_url', 'ratings_count', 'work_id', 'title',
                                   'title_without_series', 'authors_names', 'shelves_names',
                                   'corpus'], axis=1)
+        
+        self.users_df = pd.DataFrame(index = df['user_id'].unique(), columns=self.books_df.index)
+        
+        for index, review in df.iterrows():
+            self.users_df.loc[review['user_id'], review['book_id']] = review['rating']
 
         return self
 
@@ -80,9 +72,20 @@ class ExportBookData(TransformerMixin):
         print('(transform) ExportBookData, mean_cols:', self.mean_cols,
               'book_id_col:', self.book_id_col, 'dist_func:', self.dist_func,
               'n_most_similar:', self.n_most_similar, 'mode:', self.mode)
-        return df.join(df.apply(lambda x: self.books_df.loc[x[self.book_id_col], :],
-                                axis=1), rsuffix="_book_avg")
+        book_data = df.apply(lambda x: self.books_df.loc[x[self.book_id_col], :],
+                                axis=1)
+        user_data = pd.DataFrame(df.apply(self.get_nearest_ratings, axis=1, args=(df, 3)),
+                                columns=['user_rating_avg'])
+        data = book_data.join(user_data, rsuffix="_user")
 
+        return df.join(data, rsuffix="_book_avg")
+
+    
+    def get_nearest_ratings(self, x, reviews_df, top_n=3):
+        rated_books = reviews_df[reviews_df['user_id'] == x['user_id']]['book_id']
+        book_indices = self.similarity.loc[x['book_id'], rated_books].nsmallest(top_n + 1)[1:].index
+        return self.users_df.loc[x['user_id'], book_indices].mean()
+    
     def ExportAuthorNames(self, x):
         response = ""
         for author in json.loads(x.replace('"','~').replace("'",'"').replace("~","'")):
@@ -95,4 +98,19 @@ class ExportBookData(TransformerMixin):
             response += " " + item['name']
         return response
 
+    def similar(self, x):
+            index = x.name
+            similar_books = self.similarity[index].nsmallest(self.n_most_similar + 1)[1:].index
+            if self.mode == 'avg':
+                return self.books_df[['text_reviews_count'] + self.mean_cols].loc[similar_books,:].mean()
+            if self.mode == 'all':
+                data = [r[col] for _, r in self
+                        .books_df[['text_reviews_count'] + self.mean_cols].loc[similar_books, :].iterrows()
+                        for col in ['text_reviews_count'] + self.mean_cols]
+                cols = ['sim_' + str(i) + '_' + col for i in range(self.n_most_similar)
+                        for col in ['text_reviews_count'] + self.mean_cols]
+                response = pd.DataFrame(columns=cols)
+                response.loc[0] = data
+                return pd.Series(data, index=cols)
+            raise ValueError('Invalid option for "mode" (valid options are "avg or "all')
     
