@@ -8,3 +8,4 @@ ipykernel==5.2.0
 category_encoders==2.1.0
 langdetect==1.0.8
 mlxtend==0.17.2
+nltk==3.5
