@@ -92,14 +92,14 @@ class ExportBookData(TransformerMixin):
     
     def get_nearest_data(self, x, reviews_df, top_n=3):
         
-        rated_books = self.users_df.loc[x['user_id']].dropna().index.get_level_values(0).values
-        book_indices = self.similarity.loc[x['book_id'], rated_books].nsmallest(top_n + 1)[1:].index
+        rated_books = self.users_df.loc[x['user_id'], :].unstack(level=1).dropna().index
+        book_indices = self.similarity.loc[x['book_id'], rated_books].drop(labels=x['book_id']).nsmallest(top_n).index
        
         mean_data = self.users_df.loc[x['user_id'], 
                                       (book_indices, 
                                        ['book_rating', 'neg', 'neu', 'pos', 'compound'])
                                      ].unstack(level=1).mean()
-        return mean_data
+        return mean_data 
 
     
     def ExportAuthorNames(self, x):
