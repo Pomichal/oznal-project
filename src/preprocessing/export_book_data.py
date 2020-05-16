@@ -61,11 +61,18 @@ class ExportBookData(TransformerMixin):
                                   'title_without_series', 'authors_names', 'shelves_names',
                                   'corpus'], axis=1)
         
-        self.users_df = pd.DataFrame(index = df['user_id'].unique(), columns=self.books_df.index)
+        self.users_df = pd.DataFrame(index = df['user_id'].unique(),
+                                     columns=pd.MultiIndex.from_tuples(
+                                         [(i, j) for i in self.books_df.index 
+                                          for j in ['book_rating', 'neg', 'neu', 'pos', 'compound']]))
         
         for index, review in df.iterrows():
-            self.users_df.loc[review['user_id'], review['book_id']] = review['rating']
-
+            self.users_df.loc[review['user_id'], (review['book_id'], 'book_rating')] = review['rating']
+            self.users_df.loc[review['user_id'], (review['book_id'], 'neg')] = review['neg']
+            self.users_df.loc[review['user_id'], (review['book_id'], 'neu')] = review['neu']
+            self.users_df.loc[review['user_id'], (review['book_id'], 'pos')] = review['pos']
+            self.users_df.loc[review['user_id'], (review['book_id'], 'compound')] = review['compound']
+            
         return self
 
     def transform(self, df):
@@ -74,17 +81,26 @@ class ExportBookData(TransformerMixin):
               'n_most_similar:', self.n_most_similar, 'mode:', self.mode)
         book_data = df.apply(lambda x: self.books_df.loc[x[self.book_id_col], :],
                                 axis=1)
-        user_data = pd.DataFrame(df.apply(self.get_nearest_ratings, axis=1, args=(df, 3)),
-                                columns=['user_rating_avg'])
+        user_data = pd.DataFrame(df.apply(self.get_nearest_data, axis=1, args=(df, 3)))
+        
+        user_data.columns = ['book_rating_sim_avg', 'neg_sim_avg', 'neu_sim_avg', 'pos_sim_avg', 'compound_sim_avg']
+        
         data = book_data.join(user_data, rsuffix="_user")
 
         return df.join(data, rsuffix="_book_avg")
 
     
-    def get_nearest_ratings(self, x, reviews_df, top_n=3):
-        rated_books = reviews_df[reviews_df['user_id'] == x['user_id']]['book_id']
+    def get_nearest_data(self, x, reviews_df, top_n=3):
+        
+        rated_books = self.users_df.loc[x['user_id']].dropna().index.get_level_values(0).values
         book_indices = self.similarity.loc[x['book_id'], rated_books].nsmallest(top_n + 1)[1:].index
-        return self.users_df.loc[x['user_id'], book_indices].mean()
+       
+        mean_data = self.users_df.loc[x['user_id'], 
+                                      (book_indices, 
+                                       ['book_rating', 'neg', 'neu', 'pos', 'compound'])
+                                     ].unstack(level=1).mean()
+        return mean_data
+
     
     def ExportAuthorNames(self, x):
         response = ""
